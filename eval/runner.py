@@ -3,7 +3,7 @@
 Usage (live run -- requires the relevant provider API key in the environment):
 
     python -m eval.runner                              # all questions, with judge
-    python -m eval.runner --no-judge                   # skip Tier 3 (no judge calls)
+    python -m eval.runner --no-judge                   # skip Tier 5 (no judge calls)
     python -m eval.runner --difficulty easy --limit 5
     python -m eval.runner --agent-model haiku-4-5 --judge-model gpt-5-4-mini
 
@@ -77,7 +77,7 @@ def grade_trace(
     if run_judge and testcase.get("run_llm_judge"):
         from graders import llm_judge
 
-        graders["tier3"] = llm_judge.grade(
+        graders["tier5"] = llm_judge.grade(
             trace, question, gold_sql, ex_result, gold_result, judge
         )
 
@@ -108,7 +108,7 @@ def run_suite(
         cases: Test cases.
         agent_model: Registry key (config.MODELS) for the agent under test.
         judge_model: Registry key for the LLM judge.
-        run_judge: Whether to run Tier 3.
+        run_judge: Whether to run Tier 5.
         out_path: Where to write results (defaults to a timestamped file).
     """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -169,7 +169,7 @@ def _parse_args(argv=None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Run the SQL-agent eval suite.")
     p.add_argument("--difficulty", help="Filter to one difficulty tier.")
     p.add_argument("--limit", type=int, help="Cap the number of questions.")
-    p.add_argument("--no-judge", action="store_true", help="Skip Tier 3 LLM judge.")
+    p.add_argument("--no-judge", action="store_true", help="Skip Tier 5 LLM judge.")
     p.add_argument(
         "--agent-model", default=AGENT_MODEL, choices=list(MODELS),
         help="Agent model (key into config.MODELS).",

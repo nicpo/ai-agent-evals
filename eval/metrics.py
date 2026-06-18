@@ -55,14 +55,12 @@ def _run_query_count(record: dict) -> int:
 
 
 def _branch_a(record: dict):
-    return _tier(record, "tier3").get("false_positive_verdict")
+    return _tier(record, "tier5").get("false_positive_verdict")
 
 
 def _branch_b(record: dict):
-    return _tier(record, "tier3").get("false_negative_verdict")
+    return _tier(record, "tier5").get("false_negative_verdict")
 
-
-# --- metric bundles ----------------------------------------------------------
 
 def _correctness(records: list[dict]) -> dict:
     """EX- and judge-verdict-based correctness. Denominator: cases with an EX outcome."""
@@ -124,9 +122,9 @@ def _sql_quality(records: list[dict]) -> dict:
 
 
 def _branches(records: list[dict]) -> dict:
-    """Tier 3 judge branch verdicts (A = EX passed, B = EX failed)."""
-    a = [r for r in records if _tier(r, "tier3").get("branch") == "A"]
-    b = [r for r in records if _tier(r, "tier3").get("branch") == "B"]
+    """Tier 4 judge branch verdicts (A = EX passed, B = EX failed)."""
+    a = [r for r in records if _tier(r, "tier5").get("branch") == "A"]
+    b = [r for r in records if _tier(r, "tier5").get("branch") == "B"]
     n_a, n_b = len(a), len(b)
     false_pos = sum(1 for r in a if _branch_a(r) == "FALSE_POSITIVE")
     acceptable = sum(1 for r in b if _branch_b(r) == "ACCEPTABLE")
@@ -142,10 +140,10 @@ def _branches(records: list[dict]) -> dict:
 
 
 def _answer_quality(records: list[dict]) -> dict:
-    faith = [_tier(r, "tier3").get("faithfulness_score") for r in records]
-    unc = [_tier(r, "tier3").get("uncertainty_score") for r in records]
-    align = [_tier(r, "tier3").get("question_alignment_score") for r in records]
-    recovery = [_tier(r, "tier3").get("error_recovery_score") for r in records]
+    faith = [_tier(r, "tier5").get("faithfulness_score") for r in records]
+    unc = [_tier(r, "tier5").get("uncertainty_score") for r in records]
+    align = [_tier(r, "tier5").get("question_alignment_score") for r in records]
+    recovery = [_tier(r, "tier5").get("error_recovery_score") for r in records]
     return {
         "n": sum(1 for v in faith if v is not None),
         "mean_faithfulness": _mean(faith),
@@ -315,20 +313,20 @@ def format_summary(s: dict) -> str:
         _crow("True errors", c["true_error"], n, "Branch B WRONG"),
     ]
 
-    # --- Tier 3A -----------------------------------------------------------
+    # --- Tier 4A -----------------------------------------------------------
     L += [
         "", sep,
-        f"TIER 3A - SQL LOGIC  (Branch A - EX passed, n={b['n_a']})",
+        f"TIER 4A - SQL LOGIC  (Branch A - EX passed, n={b['n_a']})",
         "  When EX passed, did the SQL get the right answer for the right reasons?",
         "",
         _crow("False positive rate", b["false_positive"], b["n_a"],
               "EX passed but SQL logic was subtly wrong"),
     ]
 
-    # --- Tier 3B -----------------------------------------------------------
+    # --- Tier 4B -----------------------------------------------------------
     L += [
         "", sep,
-        f"TIER 3B - FAILURE TRIAGE  (Branch B - EX failed, n={b['n_b']})",
+        f"TIER 4B - FAILURE TRIAGE  (Branch B - EX failed, n={b['n_b']})",
         "  When EX failed, was it a real error or a cosmetic difference?",
         "",
         _crow("ACCEPTABLE", b["acceptable"], b["n_b"], "EX failed but answer was actually correct"),
@@ -337,11 +335,11 @@ def format_summary(s: dict) -> str:
               "gold SQL appears incorrect, needs human check"),
     ]
 
-    # --- Tier 3 answer quality --------------------------------------------
+    # --- Tier 5 answer quality --------------------------------------------
     rec_n = a["n_error_recovery"]
     L += [
         "", sep,
-        f"TIER 3 - ANSWER QUALITY  (judge rubrics, n={a['n']})",
+        f"TIER 5 - ANSWER QUALITY  (judge rubrics, n={a['n']})",
         "  Did the agent's natural language answer correctly represent what the data showed?",
         "",
         _vrow("Faithfulness", _score(a["mean_faithfulness"]),

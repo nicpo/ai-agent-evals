@@ -29,11 +29,17 @@ def _query_call(idx: int, sql: str, conn) -> ToolCall:
 
 
 def _case(cases: list[dict], cid: str) -> dict:
-    return next(c for c in cases if c["id"] == cid)
+    for c in cases:
+        if c.get("id") == cid:
+            return c
+    available = [c.get("id") for c in cases]
+    raise SystemExit(f"Test case id {cid!r} not found. Available ids: {available}")
 
 
 def main() -> None:
     cases = load_questions()
+    if not cases:
+        raise SystemExit("No question files found in data/evals (glob: questions-*.jsonl). Run or add eval files before running verify_graders.")
     conn = db.connect()
     failures: list[str] = []
 

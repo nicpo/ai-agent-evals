@@ -1,4 +1,4 @@
-"""Tier 3: LLM-as-judge rubrics.
+"""Tier 5: LLM-as-judge rubrics.
 
 Two kinds of judgement, conditioned on the EX outcome (per FLEX):
 
@@ -336,7 +336,7 @@ def grade(
     gold_result: list | None = None,
     judge: Judge | None = None,
 ) -> dict:
-    """Run the Tier 3 branching structure described in the spec.
+    """Run the Tier 4 branching structure described in the spec.
 
     Args:
         trace: The agent trace (provides final_answer, SQL, self-correction).

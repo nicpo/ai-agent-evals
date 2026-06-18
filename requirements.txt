@@ -5,7 +5,7 @@ sqlglot>=25.0.0
 # config degrades to a no-op if it isn't installed.
 python-dotenv>=1.0.0
 
-# Provider-agnostic LLM layer. Needed only to run the agent and the Tier 3 judge
+# Provider-agnostic LLM layer. Needed only to run the agent and the Tier 5 judge
 # (live LLM calls); the deterministic graders import these lazily and do not
 # require them. Add only the provider packages you actually use.
 langchain>=0.3.0
