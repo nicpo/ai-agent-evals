@@ -1,0 +1,23 @@
+# Deterministic graders (Tiers 1, 2, 2b) — the only hard dependency.
+sqlglot>=25.0.0
+
+# Loads API keys from the git-ignored .env file (config.load_env). Optional:
+# config degrades to a no-op if it isn't installed.
+python-dotenv>=1.0.0
+
+# Provider-agnostic LLM layer. Needed only to run the agent and the Tier 3 judge
+# (live LLM calls); the deterministic graders import these lazily and do not
+# require them. Add only the provider packages you actually use.
+langchain>=0.3.0
+langchain-anthropic>=0.3.0
+langchain-openai>=0.3.0
+pydantic>=2.0.0
+tqdm>=4.0.0
+
+# --- Future LangSmith tracing (no code changes needed) ----------------------
+# LangChain emits traces to LangSmith automatically when these env vars are set:
+#   LANGSMITH_TRACING=true
+#   LANGSMITH_API_KEY=ls__...
+#   LANGSMITH_PROJECT=sql-agent-eval   (optional)
+# Install the client when you enable it:
+# langsmith>=0.1.0

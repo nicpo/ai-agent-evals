@@ -1,0 +1,19 @@
+decree_id,title,issuing_official_id,scope,category,status,issued_year,expiry_year,fine_denarii
+1,Grain Tax Levy,4,empire-wide,taxation,active,60,,5000
+2,Eastern Trade Tariff,5,provincial,trade,active,63,,2000
+3,Syrian Garrison Expansion,5,provincial,military,active,64,,0
+4,Road Maintenance Edict,20,empire-wide,civil,active,61,,1000
+5,Judaea Census Decree,9,provincial,taxation,repealed,62,64,3000
+6,Grain Price Controls,4,empire-wide,trade,suspended,63,67,4000
+7,Britannia Frontier Tax,14,provincial,taxation,active,62,,2500
+8,Egyptian Flood Levy,3,provincial,taxation,active,65,,8000
+9,Asian Silk Tariff,2,provincial,trade,active,63,70,1500
+10,Tribune Conduct Code,20,empire-wide,civil,active,59,,500
+11,Gallic Wine Tax,7,provincial,taxation,repealed,61,63,1000
+12,Pannonian Road Edict,6,provincial,civil,active,64,,800
+13,African Grain Export Ban,12,provincial,trade,suspended,64,66,6000
+14,Empire Military Levy,4,empire-wide,military,active,60,,0
+15,Macedonian Silver Tax,16,provincial,taxation,active,64,,2000
+16,Cappadocian Border Tax,8,provincial,military,active,65,,1200
+17,Judaean Rebellion Response,10,provincial,military,repealed,66,,0
+18,Tribune Assembly Edict,19,empire-wide,civil,repealed,62,63,200

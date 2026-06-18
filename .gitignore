@@ -1,0 +1,14 @@
+# Secrets
+.env
+
+data/evals
+output/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# SQLite transient files
+*.db-journal

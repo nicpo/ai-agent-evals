@@ -1,0 +1,21 @@
+official_id,name,province_id,title,annual_salary,appointed_date,status
+1,Marcus Agrippa,1,governor,80000,0021-01-15,recalled
+2,Gaius Petronius,8,governor,75000,0062-03-15,serving
+3,Titus Flavius,1,governor,80000,0065-06-01,serving
+4,Julius Agricola,,senator,120000,0058-01-01,serving
+5,Gnaeus Domitius,4,governor,70000,0063-09-20,serving
+6,Lucius Varius,10,governor,55000,0064-04-10,serving
+7,Marcus Vipsanius,2,governor,65000,0060-07-01,serving
+8,Publius Sulpicius,15,governor,72000,0061-11-15,serving
+9,Antonius Felix,6,governor,60000,0059-03-01,recalled
+10,Gessius Florus,6,governor,60000,0064-05-20,executed
+11,Gaius Caecilius,3,governor,62000,0063-02-14,serving
+12,Marcus Pompeius,7,governor,68000,0062-08-30,serving
+13,Quintus Servilius,12,governor,50000,0062-06-01,serving
+14,Aulus Didius,5,governor,58000,0061-06-25,serving
+15,Gnaeus Trebellius,13,governor,45000,0066-03-05,serving
+16,Marcus Tullius,9,governor,55000,0061-06-01,serving
+17,Lucius Mummius,11,governor,52000,0063-07-12,serving
+18,Publius Aelius,,tribune,35000,0060-01-01,serving
+19,Gaius Marius,,tribune,32000,0062-05-15,exiled
+20,Titus Labienus,,senator,110000,0059-03-20,serving

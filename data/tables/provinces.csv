@@ -1,0 +1,16 @@
+province_id,name,region,annual_tribute,status,founded_year,governor_id
+1,Egypt,African,80000,governed,-30,3
+2,Gaul,Western,40000,governed,-50,7
+3,Hispania,Western,35000,governed,-197,11
+4,Syria,Eastern,45000,governed,-64,5
+5,Britannia,Western,15000,contested,43,14
+6,Judaea,Eastern,20000,contested,-63,10
+7,Africa Proconsularis,African,50000,governed,-146,12
+8,Asia,Eastern,60000,governed,-133,2
+9,Macedonia,Eastern,25000,governed,-148,16
+10,Pannonia,Western,18000,governed,9,6
+11,Achaea,Eastern,22000,governed,-146,17
+12,Cyrenaica,African,12000,governed,-74,13
+13,Dacia,Western,8000,contested,106,15
+14,Germania Superior,Western,10000,abandoned,-12,
+15,Cappadocia,Eastern,30000,governed,17,8
