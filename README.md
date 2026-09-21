@@ -18,11 +18,32 @@ API keys live in a git-ignored `.env` file at the repo root. Copy the template
 and fill in the providers you use:
 
 ```bash
-cp .env.example .env            # then edit .env
+# PowerShell
+Copy-Item .env.example .env
+
+# macOS/Linux
+cp .env.example .env
 ```
 
-`config.py` loads `.env` automatically at import (a missing `.env` is a no-op,
-so the deterministic graders run without any keys).
+Then edit the new `.env` file in the repository root (next to `config.py`).
+Never commit it. Add the key for the model provider you select:
+
+```text
+# For --model gpt-5-4-mini, gpt-5-4, or gpt-5-4-nano
+OPENAI_API_KEY=sk-...
+
+# For --model haiku-4-5 or sonnet-4-6
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+The repository supports **OpenAI** and **Anthropic** out of the box: those are
+the provider packages installed in `requirements.txt` and the model entries in
+`config.py`. To use another LangChain provider, install its integration package,
+add its standard API key to `.env`, and add a `provider:model` entry to
+`MODELS` in `config.py`.
+
+`config.py` loads `.env` automatically at import. A missing `.env` is a no-op,
+so deterministic graders run without any keys.
 
 ### 3. Create DB
 
@@ -41,7 +62,7 @@ The script drops and recreates the database on each run, so if you make any chan
 # Verify deterministic graders only (no API key needed):
 python -m eval.verify_graders
 
-# Full suite (requires the agent/judge provider API keys in the environment):
+# Run the full suite (requires the agent/judge provider API keys in the environment):
 python -m eval.runner
 python -m eval.runner --difficulty easy --limit 5
 python -m eval.runner --no-judge
@@ -50,6 +71,45 @@ python -m eval.runner --agent-model haiku-4-5 --judge-model gpt-5-4
 # Judge calibration (test-retest)
 python -m eval.calibrate_judge output/results/output_*.jsonl --judge-model gpt-5-4 --sample 15 --repeats 3
 ```
+
+## Generate gold eval set
+
+The repository intentionally does not ship a canonical gold eval set. Use the
+generator to create a **candidate** set from the local database, then review
+every question, SQL query and returned result before promoting a case to the
+canonical `data/evals/questions-*.jsonl` format.
+
+Run `python setup_db.py` first so `data/roman_empire.db` exists.
+
+The generator makes one LLM call. It sends the authored schema and five sample
+rows from each table to the selected provider, requests natural-language
+questions plus SQLite `SELECT` queries, executes each query using the local
+read-only database, and writes only executable cases marked
+`"review_status": "needs_review"`.
+
+```bash
+# Requires OPENAI_API_KEY in .env
+python -m eval.generate_evals --model gpt-5-4-mini --count 10 \
+  --out data/evals/candidates/roman_empire_candidates.jsonl
+
+# Or use Anthropic, with ANTHROPIC_API_KEY in .env
+python -m eval.generate_evals --model haiku-4-5 --count 10 \
+  --out data/evals/candidates/roman_empire_candidates.jsonl
+```
+
+After the questions were generated, review them:
+
+1. Does the question have one clear interpretation?
+2. Does the SQL answer that question exactly, without unrequested columns or
+   filters?
+3. Are the saved `gold_result` rows the result you expect from the database?
+4. Is the difficulty and adversarial label appropriate?
+5. Does the case cover a useful behavior rather than duplicate another case?
+
+Once you've approved, copy or edit a candidate into
+`data/evals/questions-*.jsonl`. Generated candidates and the canonical eval
+directory are git-ignored, so explicitly version an approved benchmark
+elsewhere if you need scores to be reproducible across clones.
 
 ## Changing models
 
