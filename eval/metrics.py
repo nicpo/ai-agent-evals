@@ -71,7 +71,7 @@ def _correctness(records: list[dict]) -> dict:
     wrong = sum(1 for r in evaluated if _branch_b(r) == "WRONG")
     false_pos = sum(1 for r in evaluated if _branch_a(r) == "FALSE_POSITIVE")
     review = sum(1 for r in evaluated if _branch_b(r) in ("GOLD_ERROR", "HUMAN_REVIEW"))
-    adjusted = ex_pass + acceptable
+    adjusted = ex_pass - false_pos + acceptable
     return {
         "n": n,
         "ex_pass": ex_pass, "ex_pass_rate": _rate(ex_pass, n),
@@ -309,7 +309,7 @@ def format_summary(s: dict) -> str:
         "",
         _crow("EX pass rate", c["ex_pass"], n, "result sets matched exactly"),
         _crow("Adjusted correct", c["adjusted_correct"], n,
-              f"adds {c['acceptable']} ACCEPTABLE (extra columns, valid aliases)"),
+              f"adds {c['acceptable']} ACCEPTABLE; removes {c['false_positive']} false positives"),
         _crow("True errors", c["true_error"], n, "Branch B WRONG"),
     ]
 
