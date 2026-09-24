@@ -8,6 +8,10 @@ they tell you *which clause* diverged.
 from __future__ import annotations
 
 import sqlite3
+from collections import Counter
+from dataclasses import dataclass
+from decimal import Decimal
+from typing import Any
 
 import sqlglot
 import sqlglot.expressions as exp
@@ -17,29 +21,49 @@ from graders.sql_structural import SQLStructuralGrader
 _DIALECT = "sqlite"
 
 
+@dataclass(frozen=True)
+class _ResultSet:
+    """Raw SQLite output, retaining schema order and every returned value."""
+
+    columns: tuple[str, ...]
+    rows: tuple[tuple[Any, ...], ...]
+
+
 def _run(conn: sqlite3.Connection, sql: str):
     try:
         cursor = conn.execute(sql)
-        rows = cursor.fetchall()
-        cols = [d[0] for d in cursor.description] if cursor.description else []
-        return [dict(zip(cols, row)) for row in rows], None
+        columns = tuple(d[0] for d in cursor.description) if cursor.description else ()
+        rows = tuple(tuple(row) for row in cursor.fetchall())
+        return _ResultSet(columns, rows), None
     except Exception as e:  # noqa: BLE001
-        return [], str(e)
+        return None, str(e)
 
 
-def _normalize(rows: list[dict]):
-    """Order-invariant canonical form for comparing result sets.
+def _canonical_value(value: Any) -> tuple:
+    """Return a typed, hashable scalar representation for strict EX."""
+    if value is None:
+        return ("null",)
+    if isinstance(value, bool):
+        return ("bool", value)
+    if isinstance(value, (int, float, Decimal)):
+        return ("number", Decimal(str(value)))
+    if isinstance(value, str):
+        return ("text", value)
+    if isinstance(value, bytes):
+        return ("bytes", value)
+    if isinstance(value, memoryview):
+        return ("bytes", value.tobytes())
+    value_type = type(value)
+    return ("other", value_type.__module__, value_type.__qualname__, repr(value))
 
-    Each row becomes a tuple of its values (column names discarded), stringified
-    so NULLs (None) become "" and don't raise when compared/sorted against other
-    values, then sorted within the row. The list of rows is sorted as well.
-    Equality of the returned lists is multiset equality of rows, independent of
-    row order and of column names/order.
+
+def _normalize(rows: tuple[tuple[Any, ...], ...]) -> Counter:
+    """Order-invariant multiset of positional, typed rows.
+
+    Column aliases and output schema are intentionally not compared. Values are
+    never sorted within a row, and empty outputs are schema-insensitive.
     """
-    return sorted(
-        [tuple(sorted(str(v) if v is not None else "" for v in r.values()))
-         for r in rows]
-    )
+    return Counter(tuple(_canonical_value(value) for value in row) for row in rows)
 
 
 def execution_accuracy(gold_sql: str, pred_sql: str, conn: sqlite3.Connection) -> dict:
@@ -52,11 +76,17 @@ def execution_accuracy(gold_sql: str, pred_sql: str, conn: sqlite3.Connection) -
     if pred_err:
         return {"match": False, "reason": "pred_execution_error", "error": pred_err}
 
-    match = _normalize(gold_rows) == _normalize(pred_rows)
+    assert gold_rows is not None and pred_rows is not None
+    common = {
+        "gold_row_count": len(gold_rows.rows),
+        "pred_row_count": len(pred_rows.rows),
+        "gold_column_count": len(gold_rows.columns),
+        "pred_column_count": len(pred_rows.columns),
+    }
+    match = _normalize(gold_rows.rows) == _normalize(pred_rows.rows)
     return {
         "match": match,
-        "gold_row_count": len(gold_rows),
-        "pred_row_count": len(pred_rows),
+        **common,
         "reason": None if match else "result_set_mismatch",
     }
 

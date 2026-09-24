@@ -4,6 +4,7 @@ sqlglot>=25.0.0
 # Loads API keys from the git-ignored .env file (config.load_env). Optional:
 # config degrades to a no-op if it isn't installed.
 python-dotenv>=1.0.0
+PyYAML>=6.0.0
 
 # Provider-agnostic LLM layer. Needed only to run the agent and the Tier 5 judge
 # (live LLM calls); the deterministic graders import these lazily and do not

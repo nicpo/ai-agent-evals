@@ -22,20 +22,13 @@ from pathlib import Path
 from agent import db
 from agent.agent import AgentTrace, run_agent
 from agent.tools import Toolbox
-from config import (
-    AGENT_MODEL,
-    EVAL_GLOB,
-    EVALS_DIR,
-    JUDGE_MODEL,
-    MODELS,
-    RESULTS_DIR,
-    SUMMARIES_DIR,
-)
+from config import EVALS_DIR, RESULTS_DIR, SUMMARIES_DIR
+from experiment_profiles import ExperimentProfile, load_profile
 from graders import execution, sql_structural, tool_call
 from eval.metrics import compute_metrics, format_summary
 
 
-def load_questions(evals_dir: Path = EVALS_DIR, glob: str = EVAL_GLOB) -> list[dict]:
+def load_questions(evals_dir: Path = EVALS_DIR, glob: str = "questions-*.jsonl") -> list[dict]:
     """Load all test cases from the canonical questions-*.jsonl files."""
     cases: list[dict] = []
     for path in sorted(evals_dir.glob(glob)):
@@ -84,7 +77,7 @@ def grade_trace(
     return graders
 
 
-def build_result_record(trace: AgentTrace, testcase: dict, graders: dict) -> dict:
+def build_result_record(trace: AgentTrace, testcase: dict, graders: dict, profile: ExperimentProfile) -> dict:
     return {
         "id": testcase.get("id"),
         "question": testcase["question"],
@@ -92,14 +85,14 @@ def build_result_record(trace: AgentTrace, testcase: dict, graders: dict) -> dic
         "adversarial": testcase.get("adversarial", False),
         "trace": trace.to_dict(),
         "graders": graders,
+        "profile": profile.metadata(),
     }
 
 
 def run_suite(
     cases: list[dict],
-    agent_model: str = AGENT_MODEL,
-    judge_model: str = JUDGE_MODEL,
-    run_judge: bool = True,
+    profile: ExperimentProfile | None = None,
+    run_judge: bool | None = None,
     out_path: Path | None = None,
 ) -> Path:
     """Run the agent over every case, grade it, and write a results JSONL file.
@@ -111,6 +104,8 @@ def run_suite(
         run_judge: Whether to run Tier 5.
         out_path: Where to write results (defaults to a timestamped file).
     """
+    profile = profile or load_profile()
+    run_judge = profile.judge_enabled if run_judge is None else run_judge
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
     if out_path is None:
@@ -120,20 +115,22 @@ def run_suite(
     if run_judge:
         from graders.llm_judge import Judge
 
-        judge = Judge(judge_model)
+        judge = Judge(profile.judge_model, prompts=profile.judge_prompts)
 
     records: list[dict] = []
     conn = db.connect()
     try:
         with out_path.open("w", encoding="utf-8") as fh:
             for i, case in enumerate(cases, 1):
-                toolbox = Toolbox.open()
+                toolbox = Toolbox.open(profile.enabled_tools)
                 try:
-                    trace = run_agent(case["question"], agent_model, toolbox=toolbox)
+                    trace = run_agent(case["question"], profile.agent_model, toolbox=toolbox,
+                                      max_tool_calls=profile.max_tool_calls,
+                                      system_prompt=profile.agent_prompt)
                 finally:
                     toolbox.close()
                 graders = grade_trace(trace, case, conn, judge=judge, run_judge=run_judge)
-                record = build_result_record(trace, case, graders)
+                record = build_result_record(trace, case, graders, profile)
                 records.append(record)
                 fh.write(json.dumps(record, default=str) + "\n")
                 fh.flush()
@@ -147,8 +144,8 @@ def run_suite(
     summary["meta"] = {
         "run_file": out_path.name,
         "timestamp": stamp,
-        "agent_model": agent_model,
-        "judge_model": judge_model if run_judge else None,
+        **profile.metadata(),
+        "judge_model": profile.judge_model if run_judge else None,
         "n_questions": len(records),
     }
     SUMMARIES_DIR.mkdir(parents=True, exist_ok=True)
@@ -170,30 +167,26 @@ def _parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--difficulty", help="Filter to one difficulty tier.")
     p.add_argument("--limit", type=int, help="Cap the number of questions.")
     p.add_argument("--no-judge", action="store_true", help="Skip Tier 5 LLM judge.")
-    p.add_argument(
-        "--agent-model", default=AGENT_MODEL, choices=list(MODELS),
-        help="Agent model (key into config.MODELS).",
-    )
-    p.add_argument(
-        "--judge-model", default=JUDGE_MODEL, choices=list(MODELS),
-        help="Judge model (key into config.MODELS).",
-    )
+    p.add_argument("--profile", help="Named experiment profile (defaults to catalog default).")
     return p.parse_args(argv)
 
 
 def main(argv=None) -> None:
     args = _parse_args(argv)
-    cases = load_questions()
+    try:
+        profile = load_profile(args.profile)
+    except ValueError as exc:
+        raise SystemExit(f"Invalid experiment profile: {exc}") from exc
+    cases = load_questions(glob=profile.eval_glob)
     if args.difficulty:
         cases = [c for c in cases if c.get("difficulty") == args.difficulty]
-    if args.limit:
+    if args.limit is not None:
         cases = cases[: args.limit]
 
     run_suite(
         cases,
-        agent_model=args.agent_model,
-        judge_model=args.judge_model,
-        run_judge=not args.no_judge,
+        profile=profile,
+        run_judge=False if args.no_judge else None,
     )
 
 

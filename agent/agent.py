@@ -11,16 +11,11 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field
-from pathlib import Path
 
 import config
 from config import MAX_TOOL_CALLS, AGENT_MODEL
 from agent.llm import get_chat_model
 from agent.tools import Toolbox
-
-_SYSTEM_PROMPT = (Path(__file__).resolve().parent / "system_prompt.md").read_text(
-    encoding="utf-8"
-)
 
 
 @dataclass
@@ -44,6 +39,26 @@ class AgentTrace:
     def to_dict(self) -> dict:
         return asdict(self)
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "AgentTrace":
+        """Reconstruct a saved trace without invoking an LLM or a tool."""
+        tool_calls = [
+            ToolCall(
+                tool_name=call["tool_name"],
+                parameters=call.get("parameters") or {},
+                result=call.get("result") or {},
+                call_index=call["call_index"],
+            )
+            for call in data.get("tool_calls") or []
+        ]
+        return cls(
+            question=data["question"], tool_calls=tool_calls,
+            final_answer=data.get("final_answer", ""),
+            total_llm_calls=int(data.get("total_llm_calls", 0) or 0),
+            total_tokens=int(data.get("total_tokens", 0) or 0),
+            error=data.get("error"), model=data.get("model", ""),
+        )
+
     def last_query_sql(self) -> str | None:
         """The SQL of the last run_query call -- the agent's 'prediction'."""
         queries = [tc for tc in self.tool_calls if tc.tool_name == "run_query"]
@@ -57,6 +72,7 @@ def run_agent(
     model: str = AGENT_MODEL,
     toolbox: Toolbox | None = None,
     max_tool_calls: int = MAX_TOOL_CALLS,
+    system_prompt: str | None = None,
 ) -> AgentTrace:
     """Run the agent against a single question and return its trace.
 
@@ -73,6 +89,9 @@ def run_agent(
         ToolMessage,
     )
 
+    if system_prompt is None:
+        from pathlib import Path
+        system_prompt = (Path(__file__).resolve().parent / "system_prompt.md").read_text(encoding="utf-8")
     owns_toolbox = toolbox is None
     toolbox = toolbox or Toolbox.open()
 
@@ -82,7 +101,7 @@ def run_agent(
 
     try:
         chat = get_chat_model(entry).bind_tools(toolbox.langchain_tools())
-        messages = [SystemMessage(content=_SYSTEM_PROMPT), HumanMessage(content=question)]
+        messages = [SystemMessage(content=system_prompt), HumanMessage(content=question)]
 
         while True:
             response: AIMessage = chat.invoke(messages)

@@ -113,5 +113,5 @@ EVAL_GLOB = "questions-*.jsonl"
 
 # Circuit breaker: maximum number of tool calls before the agent loop aborts.
 MAX_TOOL_CALLS = 12
-
+PROFILE_CATALOG = REPO_ROOT / "config" / "experiment_profiles.yaml"
 

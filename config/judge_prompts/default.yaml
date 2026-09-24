@@ -1,0 +1,193 @@
+schema_version: 1
+prompts:
+  branch_a_false_positive: |-
+    You are evaluating a SQL query that produced the correct result set.
+    Your task is to determine whether it did so for the right reasons,
+    or whether the match is coincidental on this particular database.
+
+    Question: {question}
+    Schema: {schema_summary}
+    Gold SQL: {gold_sql}
+    Agent SQL: {agent_sql}
+
+    Do not consider the result sets — they matched. Focus only on whether
+    the agent's SQL logic correctly translates the question.
+
+    Evaluate:
+
+    SCHEMA ALIGNMENT: Do the tables and columns used match the intent of
+    the question and the actual schema? Flag any column or table that is
+    technically valid but semantically wrong for this question.
+
+    CORRECT FILTERING: Do the WHERE clauses reflect all conditions stated
+    in the question? Consider whether a filter that works on this dataset
+    would fail if new rows were added. NOTE: defensive redundant filters
+    (e.g., IS NOT NULL on a non-nullable column, an extra ORDER BY that
+    doesn't alter row selection) are not false positives — only flag
+    filters that could exclude valid data on plausible database variations.
+
+    CLAUSE APPROPRIATENESS: Are GROUP BY, HAVING, ORDER BY, DISTINCT used
+    correctly? Flag missing clauses the question requires, or extra clauses
+    that could alter results on different data.
+
+    MULTIPLE ROW HANDLING: If the question implies a single result but
+    multiple rows could qualify (e.g., a tie), does the SQL handle this
+    correctly, or does it suppress rows that should appear?
+
+    VERDICT:
+    CORRECT — SQL logic correctly translates the question. Defensive
+      redundant additions (IS NOT NULL on required fields, extra columns)
+      are acceptable and should not trigger FALSE_POSITIVE.
+    FALSE_POSITIVE — SQL has a logical flaw that would produce incorrect
+      results on plausible data variations. Describe the flaw and give a
+      concrete example of data that would expose it.
+
+    VERDICT: <CORRECT or FALSE_POSITIVE>
+    REASON: <cite specific clauses or column references>
+  branch_b_false_negative: |-
+    You are evaluating a SQL query that produced a different result set
+    from the gold SQL. Your task is to determine whether the agent's query
+    is actually wrong, or whether the mismatch is acceptable.
+
+    Question: {question}
+    Schema: {schema_summary}
+    Gold SQL: {gold_sql}
+    Agent SQL: {agent_sql}
+    Gold result: {gold_result}
+    Agent result: {agent_result}
+
+    Evaluate:
+
+    OUTPUT STRUCTURE: Are differences in column selection, column order,
+    or extra/missing columns acceptable given how the question is phrased?
+    (e.g., question asks "which provinces" — agent returning name + region
+    while gold returns name only may be acceptable.)
+
+    VALUE REPRESENTATION: Are differences in numeric precision, rounding,
+    or format (e.g., 13400.0 vs 13400) meaningful or cosmetic?
+
+    MULTIPLE VALID INTERPRETATIONS: Does the question admit more than one
+    valid SQL translation? If the agent's interpretation is defensible,
+    the mismatch may reflect ambiguity rather than error.
+
+    GOLD SQL QUALITY: Is the gold SQL correct? If the agent's SQL is a
+    better or equally valid translation of the question, flag it.
+
+    VERDICT:
+    WRONG — Agent's SQL does not correctly answer the question.
+    ACCEPTABLE — Mismatch is cosmetic or reflects valid ambiguity.
+      Describe why the agent's result is a valid answer.
+    GOLD_ERROR — Gold SQL appears incorrect. Flag for human review.
+    HUMAN_REVIEW — Cannot determine without domain expertise.
+
+    VERDICT: <WRONG, ACCEPTABLE, GOLD_ERROR, or HUMAN_REVIEW>
+    REASON: <cite specific differences and whether they alter the meaning
+             of the answer>
+  faithfulness: |-
+    You are evaluating a data assistant's response to a database question.
+
+    Question: {question}
+    Result set returned by the database: {agent_result_set}
+    Agent's final answer: {final_answer}
+
+    Score FAITHFULNESS — does the answer accurately represent the result set?
+
+    1 — Answer contains a claim that directly contradicts the result set: wrong entity
+        name, wrong numeric value, wrong direction of comparison (e.g., reports highest
+        when result shows lowest).
+    2 — Answer mischaracterizes a result in a significant way: reports a sum as an
+        average, drops a tie, or makes an unsupported claim not derivable from the data.
+    3 — Answer mostly correct but omits something meaningful from the result set that
+        the question asked for, or adds a minor unsupported inference.
+    4 — Answer accurately represents the main result but has a very minor imprecision
+        that does not change meaning (e.g., rounds a value slightly, omits a secondary
+        detail that wasn't explicitly asked for).
+    5 — Answer accurately and completely represents the result set with no omissions,
+        no unsupported claims, and correctly handles any edge cases visible in the data
+        (ties, nulls, zero-row results). If no edge cases exist, a fully accurate
+        answer still scores 5.
+
+    SCORE: <1-5>
+    REASON: <cite a specific value or entity from the result set and how the answer
+             handles it>
+  uncertainty: |-
+    You are evaluating a data assistant's response to a database question.
+
+    Question: {question}
+    Result set returned by the database: {agent_result_set}
+    Agent's final answer: {final_answer}
+
+    Score UNCERTAINTY ACKNOWLEDGMENT — does the answer correctly handle ambiguity
+    visible in the result set?
+
+    1 — Answer states a definitive conclusion when the result set contains an obvious
+        ambiguity: a tie between two rows, a null in the key column, a single-row
+        result that may not generalize, or a result that is exactly zero.
+    2 — Answer notes that ambiguity exists but misidentifies what it is or why it matters.
+    3 — Answer does not flag ambiguity that exists in the data, but the claim it makes
+        is still technically defensible — the omission is minor.
+    4 — Answer handles ambiguity correctly but incompletely: either identifies a tie
+        without explaining its implication, or notes a caveat without fully articulating
+        what it means for the result.
+    5 — Answer fully and correctly handles ambiguity. If ambiguity exists, it is named
+        and its practical implication explained. If the data is unambiguous, the answer
+        states a clear conclusion without unnecessary hedging. Either outcome scores 5
+        when handled correctly.
+
+    SCORE: <1-5>
+    REASON: <identify the specific ambiguity in the result set, if any, and how the
+             answer handles it — if no ambiguity exists, confirm this and explain
+             why the score reflects it>
+  error_recovery: |-
+    You are evaluating how a data assistant recovered from a query error.
+
+    Question: {question}
+    Failed SQL: {failed_sql}
+    Error message: {error_message}
+    Corrected SQL: {corrected_sql}
+
+    Score ERROR RECOVERY — did the agent correctly diagnose and fix the error?
+
+    1 — Agent resubmitted the same query unchanged, or made a change unrelated to
+        the error message.
+    2 — Agent identified the error type correctly but the fix introduces a new
+        structural problem (e.g., fixes a column name but breaks the join condition).
+    3 — Agent fixed the immediate error but did not address an underlying issue the
+        error was symptomatic of (e.g., fixed the syntax but the logic is still wrong).
+    4 — Agent correctly diagnosed and fixed the error. Corrected SQL executes cleanly
+        and the fix is directly traceable to the error message.
+    5 — Agent correctly diagnosed the error, fixed it, and the corrected SQL reflects
+        improved understanding of the schema (e.g., ran SELECT DISTINCT to verify an
+        enum value before re-filtering, rather than guessing again).
+
+    SCORE: <1-5>
+    REASON: <cite the specific error message and identify exactly what changed between
+             the two queries>
+  question_alignment: |-
+    You are evaluating whether a data assistant answered the question that was asked.
+
+    Question: {question}
+    Agent's final answer: {final_answer}
+
+    Score QUESTION ALIGNMENT — does the answer address the question as stated?
+
+    1 — Answer addresses a clearly different question: asked for highest, returned
+        lowest; asked for a count, returned a list; asked about one entity, answered
+        about another.
+    2 — Answer addresses the main question but drops a meaningful qualifier from the
+        original (e.g., "among active provinces" or "in the last recorded year" was
+        silently ignored).
+    3 — Answer addresses the question but at the wrong level of granularity: asked for
+        per-province breakdown, returned an empire-wide total; asked for the single
+        top result, returned a ranked list.
+    4 — Answer addresses the question correctly but with a minor gap: a qualifier is
+        honored but not explicitly acknowledged, or the granularity is right but
+        slightly imprecise in phrasing.
+    5 — Answer directly and completely addresses the question as stated, at the right
+        granularity, with all qualifiers honored. No gaps, no drift. A correct answer
+        to a simple question with no qualifiers scores 5 without needing to restate
+        anything explicitly.
+
+    SCORE: <1-5>
+    REASON: <quote the specific part of the question that was or was not addressed
+             in the answer>

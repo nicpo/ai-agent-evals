@@ -1,0 +1,39 @@
+schema_version: 1
+default_profile: v1
+profiles:
+  v1:
+    agent:
+      model: haiku-4-5
+      prompt: agent/system_prompt_v1.md
+      tools: [run_query, get_sample_rows]
+    judge:
+      enabled: true
+      model: gpt-5-4
+      prompts: config/judge_prompts/default.yaml
+    harness:
+      eval_glob: questions-*.jsonl
+      max_tool_calls: 12
+  v2:
+    agent:
+      model: haiku-4-5
+      prompt: agent/system_prompt_v2.md
+      tools: [get_schema, run_query, get_sample_rows]
+    judge:
+      enabled: true
+      model: gpt-5-4
+      prompts: config/judge_prompts/default.yaml
+    harness:
+      eval_glob: questions-*.jsonl
+      max_tool_calls: 12
+  v3:
+    agent:
+      model: haiku-4-5
+      prompt: agent/system_prompt_v3.md
+      tools: [run_query, get_sample_rows]
+    judge:
+      enabled: true
+      model: gpt-5-4
+      prompts: config/judge_prompts/default.yaml
+    harness:
+      eval_glob: questions-*.jsonl
+      max_tool_calls: 12

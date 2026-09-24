@@ -22,6 +22,7 @@ from agent.agent import AgentTrace
 from agent.db import SCHEMA
 from config import JUDGE_MODEL
 from agent.llm import get_chat_model
+from experiment_profiles import JudgePromptBundle, load_profile
 
 
 # --- Prompt templates (verbatim from the spec) -------------------------------
@@ -268,8 +269,9 @@ def _parse_reason(text: str) -> str:
 class Judge:
     """Wraps a provider-agnostic chat model and runs the rubric prompts."""
 
-    def __init__(self, model: str = JUDGE_MODEL):
+    def __init__(self, model: str = JUDGE_MODEL, prompts: JudgePromptBundle | None = None):
         self.model_name = model  # registry key into config.MODELS
+        self.prompts = prompts or load_profile().judge_prompts
         self._model = None  # built lazily so importing this module is cheap
 
     @property
@@ -286,14 +288,14 @@ class Judge:
 
     # -- SQL-level (branch) --------------------------------------------------
     def false_positive_check(self, question, gold_sql, agent_sql) -> dict:
-        prompt = BRANCH_A_FALSE_POSITIVE.format(
+        prompt = self.prompts.templates["branch_a_false_positive"].format(
             question=question, schema_summary=_schema_summary(),
             gold_sql=gold_sql, agent_sql=agent_sql,
         )
         return _parse_verdict(self._ask(prompt))
 
     def false_negative_check(self, question, gold_sql, agent_sql, gold_result, agent_result) -> dict:
-        prompt = BRANCH_B_FALSE_NEGATIVE.format(
+        prompt = self.prompts.templates["branch_b_false_negative"].format(
             question=question, schema_summary=_schema_summary(),
             gold_sql=gold_sql, agent_sql=agent_sql,
             gold_result=json.dumps(gold_result, default=str),
@@ -303,26 +305,26 @@ class Judge:
 
     # -- Answer-level --------------------------------------------------------
     def faithfulness(self, question, agent_result_set, final_answer) -> dict:
-        return _parse_score(self._ask(FAITHFULNESS.format(
+        return _parse_score(self._ask(self.prompts.templates["faithfulness"].format(
             question=question,
             agent_result_set=json.dumps(agent_result_set, default=str),
             final_answer=final_answer,
         )))
 
     def uncertainty(self, question, agent_result_set, final_answer) -> dict:
-        return _parse_score(self._ask(UNCERTAINTY.format(
+        return _parse_score(self._ask(self.prompts.templates["uncertainty"].format(
             question=question,
             agent_result_set=json.dumps(agent_result_set, default=str),
             final_answer=final_answer,
         )))
 
     def question_alignment(self, question, final_answer) -> dict:
-        return _parse_score(self._ask(QUESTION_ALIGNMENT.format(
+        return _parse_score(self._ask(self.prompts.templates["question_alignment"].format(
             question=question, final_answer=final_answer,
         )))
 
     def error_recovery(self, question, failed_sql, error_message, corrected_sql) -> dict:
-        return _parse_score(self._ask(ERROR_RECOVERY.format(
+        return _parse_score(self._ask(self.prompts.templates["error_recovery"].format(
             question=question, failed_sql=failed_sql,
             error_message=error_message, corrected_sql=corrected_sql,
         )))

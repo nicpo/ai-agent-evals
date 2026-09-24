@@ -32,6 +32,7 @@ _DML_KEYWORDS = {
 }
 
 _MAX_ROWS = 1000  # safety cap on returned rows
+AVAILABLE_TOOLS = frozenset({"get_schema", "run_query", "get_sample_rows"})
 
 
 def _looks_like_dml(sql: str) -> str | None:
@@ -60,10 +61,15 @@ class Toolbox:
     """Bundles the agent tools around a single read-only DB connection."""
 
     conn: sqlite3.Connection
+    enabled_tools: frozenset[str] = AVAILABLE_TOOLS
 
     @classmethod
-    def open(cls) -> "Toolbox":
-        return cls(conn=db.connect())
+    def open(cls, enabled_tools=None) -> "Toolbox":
+        tools = AVAILABLE_TOOLS if enabled_tools is None else frozenset(enabled_tools)
+        unknown = tools - AVAILABLE_TOOLS
+        if unknown:
+            raise ValueError(f"Unknown tool(s): {', '.join(sorted(unknown))}")
+        return cls(conn=db.connect(), enabled_tools=tools)
 
     def close(self) -> None:
         self.conn.close()
@@ -111,13 +117,14 @@ class Toolbox:
     @property
     def dispatch_map(self) -> dict:
         """Maps tool name -> callable taking a kwargs dict."""
-        return {
+        all_tools = {
             "get_schema": lambda args: self.get_schema(),
             "run_query": lambda args: self.run_query(args["sql"]),
             "get_sample_rows": lambda args: self.get_sample_rows(
                 args["table"], args.get("n", 3)
             ),
         }
+        return {name: fn for name, fn in all_tools.items() if name in self.enabled_tools}
 
     def dispatch(self, name: str, args: dict) -> dict:
         fn = self.dispatch_map.get(name)
@@ -144,7 +151,8 @@ class Toolbox:
             table: str = Field(description="Name of the table to sample.")
             n: int = Field(default=3, description="Number of rows to return.")
 
-        return [
+        all_tools = {
+            "get_schema":
             StructuredTool.from_function(
                 func=lambda: self.get_schema(),
                 name="get_schema",
@@ -154,7 +162,7 @@ class Toolbox:
                 ),
                 args_schema=GetSchemaArgs,
             ),
-            StructuredTool.from_function(
+            "run_query": StructuredTool.from_function(
                 func=lambda sql: self.run_query(sql),
                 name="run_query",
                 description=(
@@ -163,7 +171,7 @@ class Toolbox:
                 ),
                 args_schema=RunQueryArgs,
             ),
-            StructuredTool.from_function(
+            "get_sample_rows": StructuredTool.from_function(
                 func=lambda table, n=3: self.get_sample_rows(table, n),
                 name="get_sample_rows",
                 description=(
@@ -172,4 +180,5 @@ class Toolbox:
                 ),
                 args_schema=GetSampleRowsArgs,
             ),
-        ]
+        }
+        return [all_tools[name] for name in sorted(self.enabled_tools)]

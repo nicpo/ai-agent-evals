@@ -4,6 +4,31 @@ A text-to-SQL agent over a synthetic Roman Empire database, plus a tiered eval
 harness (deterministic tool-call graders, structural SQL graders, gold-SQL
 execution accuracy, and an LLM-as-judge).
 
+## Agent overview
+
+The agent is a small text-to-SQL assistant. You give it a free-form question about the Roman Empire such as:
+
+> “Which province collected the most tribute?”
+
+It then tries to answer by writing SQL, running that SQL against the SQLite database, and turning the returned rows into a natural-language answer.
+
+The workflow is:
+
+```text
+User question
+  → inspect schema or sample data if needed
+  → write SQL
+  → run SQL
+  → optionally fix a failed query
+  → explain the result in English
+```
+
+Its tools are:
+
+- `get_schema`: returns tables, columns, types, and relationships.
+- `get_sample_rows`: returns example records so the agent can discover actual values, such as permitted status names.
+- `run_query`: executes a read-only SQL query and returns columns, rows, row count, or an error.
+
 ## Setup
 
 ### 1. Set up the environment
@@ -64,13 +89,19 @@ python -m eval.verify_graders
 
 # Run the full suite (requires the agent/judge provider API keys in the environment):
 python -m eval.runner
+python -m eval.runner --profile v1
+python -m eval.runner --profile v2 --no-judge
+python -m eval.runner --profile v3 --difficulty easy --limit 5
 python -m eval.runner --difficulty easy --limit 5
 python -m eval.runner --no-judge
-python -m eval.runner --agent-model haiku-4-5 --judge-model gpt-5-4
 
 # Judge calibration (test-retest)
 python -m eval.calibrate_judge output/results/output_*.jsonl --judge-model gpt-5-4 --sample 15 --repeats 3
 ```
+
+Experiment profiles live in `config/experiment_profiles.yaml`. Each profile
+selects repository-local agent and judge prompts, tools, models, and harness
+settings; results record the resolved profile plus prompt hashes.
 
 ## Generate gold eval set
 
