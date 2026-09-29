@@ -33,6 +33,8 @@ class AgentTrace:
     final_answer: str = ""
     total_llm_calls: int = 0
     total_tokens: int = 0
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
     error: str | None = None
     model: str = ""
 
@@ -56,6 +58,8 @@ class AgentTrace:
             final_answer=data.get("final_answer", ""),
             total_llm_calls=int(data.get("total_llm_calls", 0) or 0),
             total_tokens=int(data.get("total_tokens", 0) or 0),
+            total_input_tokens=int(data.get("total_input_tokens", 0) or 0),
+            total_output_tokens=int(data.get("total_output_tokens", 0) or 0),
             error=data.get("error"), model=data.get("model", ""),
         )
 
@@ -108,6 +112,8 @@ def run_agent(
             trace.total_llm_calls += 1
             usage = getattr(response, "usage_metadata", None) or {}
             trace.total_tokens += int(usage.get("total_tokens", 0) or 0)
+            trace.total_input_tokens += int(usage.get("input_tokens", 0) or 0)
+            trace.total_output_tokens += int(usage.get("output_tokens", 0) or 0)
             messages.append(response)
 
             if not response.tool_calls:

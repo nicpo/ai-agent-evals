@@ -155,6 +155,15 @@ Once you've approved, copy or edit a candidate into
 directory are git-ignored, so explicitly version an approved benchmark
 elsewhere if you need scores to be reproducible across clones.
 
+## Experiments
+
+`experiments/` contains standalone code for the methodology behind a few blog
+posts about this harness: the EX-vs-judge disagreement matrix, probing
+graders' *agreement* with database perturbations, and repeated-run
+reliability/cost accounting. Each one runs against the toy eval set by
+default and takes a `--profile` flag to point at your own eval set instead.
+See [`experiments/README.md`](experiments/README.md).
+
 ## Changing models
 
 The agent and the judge talk to LLMs through `agent/llm.py`, which wraps
