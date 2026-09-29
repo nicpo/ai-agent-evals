@@ -103,6 +103,19 @@ Experiment profiles live in `config/experiment_profiles.yaml`. Each profile
 selects repository-local agent and judge prompts, tools, models, and harness
 settings; results record the resolved profile plus prompt hashes.
 
+## Toy eval set
+
+`data/evals/toy/` contains 4 example cases (2 easy, 1 medium, 1 hard), split by difficulty into `questions-easy.jsonl`, `questions-medium.jsonl`, and `questions-hard.jsonl` - the same naming convention the canonical set uses. **This is a toy set only**. I t exists so you can run the harness end-to-end without generating anything first, and so you can see the eval case structure (question, gold SQL, gold result, and the grader metadata fields) in real files. It lives in a subdirectory so the default `questions-*.jsonl` glob (rooted at `data/evals/`) does not pick it up; point
+the runner at it explicitly:
+
+```bash
+python -m eval.runner --profile toy
+```
+
+The `toy` profile (in `config/experiment_profiles.yaml`) is identical to `v1` except it points `harness.eval_glob` at `toy/questions-*.jsonl` instead of the default `questions-*.jsonl`.
+
+For actual experiments, do not rely on this toy set. Create your own eval set (see below) sized and reviewed for the behaviors you want to measure.
+
 ## Generate gold eval set
 
 The repository intentionally does not ship a canonical gold eval set. Use the

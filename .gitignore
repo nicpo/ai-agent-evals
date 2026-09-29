@@ -1,7 +1,8 @@
 # Secrets
 .env
 
-data/evals
+data/evals/*
+!data/evals/toy/
 output/
 
 # Python
