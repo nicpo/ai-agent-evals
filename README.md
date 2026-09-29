@@ -1,8 +1,46 @@
-# SQL Agent + Eval Harness
+# AI Agent Evals: Reliability, Graders, and Cost
 
-A text-to-SQL agent over a synthetic Roman Empire database, plus a tiered eval
-harness (deterministic tool-call graders, structural SQL graders, gold-SQL
-execution accuracy, and an LLM-as-judge).
+An experimental evaluation harness for a text-to-SQL agent.
+
+I use a small agent and fictional Roman Empire database to investigate how agent evaluation behaves in practice:
+
+- When do deterministic and LLM graders disagree?
+- Can both graders agree on an incorrect answer?
+- How much does measured performance vary across repeated runs?
+- How do agent architecture changes affect accuracy and inference cost?
+
+[Project overview](#project-summary-diagram) · [Experiments and blog](#experiments) · [Run the harness](#run)
+
+## Project summary diagram
+
+```text
+                         Build eval
+                             │
+                             ▼
+             ┌── deterministic graders
+Agent ───────┤
+             └── LLM judge
+                             │
+                ┌────────────┴────────────┐
+                ▼                         ▼
+           DISAGREE                    AGREE
+                │                         │
+          Why? What does            Are they both
+          each measure?             still wrong?
+                │                         │
+                └────────────┬────────────┘
+                             ▼
+                       REPEATABILITY
+                   Do results persist?
+                             │
+                             ▼
+                           COST
+                 Is the improvement worth it?
+```
+
+## Key experiments
+
+The experiments examine execution-versus-judge disagreement, whether grader agreement survives database perturbations, and repeated-run reliability and cost accounting. See [Experiments](#experiments) for the runnable methodology and related blog-post code.
 
 ## Agent overview
 
