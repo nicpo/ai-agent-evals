@@ -1,8 +1,7 @@
-# exp_02_graders_agreement
+# Experiment 02: When graders agree
 
-Companion code for the post "When the graders agree, they may not have seen
-everything" (a query that passed EX and got a `CORRECT` judge verdict, yet
-failed under a valid database change).
+Companion code for the post <a href="https://nicpo.github.io/2026/08/05/graders-agreement/">"When the graders agree, they may not have seen everything"</a>: a query that passed EX and got a `CORRECT` judge verdict, yet
+failed under a valid database change.
 
 ## Method
 

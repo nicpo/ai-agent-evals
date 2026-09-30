@@ -1,7 +1,7 @@
-# exp_03_repeatability_costs
+# Experiment 03: Repeatability
 
-Companion code for "Measuring agent reliability with repeated evals" and
-"Fewer agent steps do not mean proportionally lower cost".
+Companion code for the posts <a href="https://nicpo.github.io/2026/08/28/repeatability/">"Measuring agent reliability with repeated evals"</a> and
+<a href="https://nicpo.github.io/2026/09/17/costs/">"Fewer agent steps do not mean proportionally lower cost"</a>.
 
 ## Method
 

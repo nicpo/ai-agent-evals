@@ -1,7 +1,6 @@
-# exp_04_jev_judge
+# Experiment 04: Jev judge
 
-Companion code for the post on replacing the LLM judge with Jev, a small hosted
-"System One" decision model from TypeSafe.
+Companion code for the post on <a href="https://nicpo.github.io/2026/09/30/jev/">replacing a reasoning-model judge with Jev</a>, a small hosted "System One" decision model from TypeSafe.
 
 ## Method
 

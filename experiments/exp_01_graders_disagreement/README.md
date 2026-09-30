@@ -1,7 +1,6 @@
-# exp_01_graders_disagreement
+# Experiment 01: Graders disagreement
 
-Companion code for the post "Lessons from the mismatch between your
-deterministic grader and the LLM judge" (EX vs. LLM judge -- 38% vs. 66%).
+Companion code for the post <a href="https://nicpo.github.io/2026/07/10/graders-disagreement/">"Lessons from the mismatch between your deterministic grader and the LLM judge"</a>.
 
 ## Method
 
