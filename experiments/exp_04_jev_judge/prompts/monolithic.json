@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "question_name": "semantic_correctness",
+  "branch_a": {
+    "instructions": "The agent SQL produced the same result as the approved SQL on the current database. Decide whether the agent SQL nevertheless has a substantive logical flaw that could give a wrong answer on another plausible database state allowed by the supplied schema.",
+    "criteria": {
+      "A": "CORRECT: The agent SQL is a defensible translation of the user question. Harmless aliases, formatting, ordering not requested by the user, and genuinely redundant conditions are acceptable.",
+      "B": "INCORRECT: The agent SQL has a substantive semantic or logical error, including a missing or unjustified filter, wrong join/cardinality, aggregation error, tie error, or behavior that fails on a plausible valid database state.",
+      "C": "CANNOT_DETERMINE: The supplied evidence is insufficient, the question is materially ambiguous, or the approved SQL itself appears questionable."
+    }
+  },
+  "branch_b": {
+    "instructions": "The agent SQL produced a different result from the approved SQL on the current database. Decide whether the agent SQL is nevertheless a defensible answer to the user question.",
+    "criteria": {
+      "A": "CORRECT: The mismatch is cosmetic, reflects an acceptable output variation, or follows a defensible interpretation of the question.",
+      "B": "INCORRECT: The agent SQL does not correctly answer the question; the difference changes the requested meaning, values, entities, qualifiers, or granularity.",
+      "C": "CANNOT_DETERMINE: The supplied evidence is insufficient, the question is materially ambiguous, or the approved SQL itself appears questionable."
+    }
+  },
+  "label_map": {
+    "A": "CORRECT",
+    "B": "INCORRECT",
+    "C": "CANNOT_DETERMINE"
+  }
+}
+

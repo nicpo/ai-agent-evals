@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "frozen_note": "Questions follow the four evaluation dimensions of the GPT judge rubric (config/judge_prompts/default.yaml). They were written before any decomposed run; do not tune them after seeing results.",
+  "pass_rule": "Every question is phrased so that a yes answer means the agent SQL is acceptable on that dimension. Dimensions that do not apply count as yes.",
+  "branch_a": {
+    "questions": {
+      "schema_alignment": "Do the tables and columns used in the agent SQL match the intent of the user question and the supplied schema? Answer no if any column or table is technically valid but semantically wrong for this question.",
+      "filtering": "Does the agent SQL apply every condition stated in the question, and no extra condition that could exclude valid rows on a plausible database state? Redundant defensive filters, such as IS NOT NULL on a non-nullable column, are harmless and count as yes.",
+      "clauses": "Are GROUP BY, HAVING, ORDER BY, DISTINCT, LIMIT and aggregate functions used correctly for the question? Answer no if a required clause is missing or an extra clause could change the results on different data.",
+      "multiple_rows": "If the question implies a single result but several rows could qualify (for example a tie), does the agent SQL handle this correctly instead of silently dropping rows that should appear? Answer yes if the question does not involve this."
+    }
+  },
+  "branch_b": {
+    "questions": {
+      "output_structure": "Are the differences between the agent result and the approved result in column selection, column order, or extra or missing columns acceptable given how the question is phrased? Answer yes if there are no such differences.",
+      "value_representation": "Are the differences in numeric precision, rounding or format between the agent result and the approved result cosmetic rather than meaningful? Answer yes if there are no such differences.",
+      "same_entities": "Does the agent result contain the same set of rows or entities that a correct answer to the question would contain, ignoring column selection and formatting?",
+      "qualifiers_granularity": "Does the agent SQL honor every qualifier, limit, time window and level of granularity stated in the question?"
+    }
+  },
+  "verdict_after_narrow": {
+    "instructions_suffix": " The state also includes narrow_assessments: independent probabilities that the agent SQL is acceptable on individual dimensions. Weigh them together with the rest of the evidence."
+  }
+}

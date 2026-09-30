@@ -13,6 +13,7 @@ takes `--profile` to point at your own eval set instead.
 | [`exp_01_graders_disagreement`](exp_01_graders_disagreement/) | Lessons from the mismatch between your deterministic grader and the LLM judge | EX x judge disagreement matrix; inspect the off-diagonal cases |
 | [`exp_02_graders_agreement`](exp_02_graders_agreement/) | When the graders agree, they may not have seen everything | Probe dual-pass cases against schema-derived database perturbations |
 | [`exp_03_repeatability_costs`](exp_03_repeatability_costs/) | Measuring agent reliability with repeated evals; Fewer agent steps do not mean proportionally lower cost | Repeated-run reliability (pass@k / pass^k), agent/judge variance, and token/dollar cost accounting |
+| [`exp_04_jev_judge`](exp_04_jev_judge/) | Can a small hosted decision model replace the LLM judge? | Grade the same attempts with Jev (single call and decomposed two-call) next to EX and the GPT judge; agreement, accuracy against your labels, and a Jev-first cascade |
 
 See each experiment's own README for the method detail and reproduce commands.
 Output (results JSONL, reports) is written under the harness's existing

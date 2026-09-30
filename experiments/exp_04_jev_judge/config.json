@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "backend": "typesafe",
+  "base_url": "https://api.typesafe.ai",
+  "model": "jev-1.13.0",
+  "model_catalog_alias": "jev-latest",
+  "api_key_env": "TYPESAFE_API_KEY",
+  "input_usd_per_million_tokens": 0.042,
+  "timeout_seconds": 60,
+  "notes": "The model is pinned to an exact ID. The alias jev-latest resolved to jev-1.13.0 when this experiment was written. A response from any other model stops the run."
+}

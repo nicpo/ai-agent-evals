@@ -40,7 +40,7 @@ Agent ───────┤
 
 ## Key experiments
 
-The experiments examine execution-versus-judge disagreement, whether grader agreement survives database perturbations, and repeated-run reliability and cost accounting. See [Experiments](#experiments) for the runnable methodology and related blog-post code.
+The experiments examine execution-versus-judge disagreement, whether grader agreement survives database perturbations, repeated-run reliability and cost accounting, and whether a small hosted decision model (Jev) can replace the LLM judge. See [Experiments](#experiments) for the runnable methodology and related blog-post code.
 
 ## Agent overview
 
@@ -97,6 +97,9 @@ OPENAI_API_KEY=sk-...
 
 # For --model haiku-4-5 or sonnet-4-6
 ANTHROPIC_API_KEY=sk-ant-...
+
+# Only for experiments/exp_04_jev_judge (hosted Jev judge)
+TYPESAFE_API_KEY=...
 ```
 
 The repository supports **OpenAI** and **Anthropic** out of the box: those are
@@ -197,8 +200,9 @@ elsewhere if you need scores to be reproducible across clones.
 
 `experiments/` contains standalone code for the methodology behind a few blog
 posts about this harness: the EX-vs-judge disagreement matrix, probing
-graders' *agreement* with database perturbations, and repeated-run
-reliability/cost accounting. Each one runs against the toy eval set by
+graders' *agreement* with database perturbations, repeated-run
+reliability/cost accounting, and Jev (a small hosted decision model) as the
+semantic SQL judge next to EX and the GPT judge. Each one runs against the toy eval set by
 default and takes a `--profile` flag to point at your own eval set instead.
 See [`experiments/README.md`](experiments/README.md).
 
@@ -250,7 +254,10 @@ rome-eval-harness/             # repo root (also the import root)
 ├── eval/
 │   ├── runner.py          # orchestrates all tiers, writes output/results/*.jsonl
 │   └── verify_graders.py  # offline check of Tiers 1/2/2b (no LLM)
-├── data/                  # roman_empire.db + evals/questions-*.jsonl
+├── config/                # experiment_profiles.yaml + judge prompt bundles
+├── data/                  # roman_empire.db + evals/questions-*.jsonl (toy set in evals/toy/)
+├── experiments/           # exp_01 to exp_04: standalone blog-post experiments
+├── tests/                 # offline unit tests: python -m unittest discover -s tests
 └── output/
     ├── results/           # per-question traces + grades (.jsonl)
     ├── summaries/         # aggregate run metrics (.json)
