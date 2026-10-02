@@ -215,13 +215,22 @@ LangChain's `init_chat_model`. Models live in the `MODELS` registry in
 ```python
 # config.py
 MODELS = {
-    "haiku-4-5":  {"id": "anthropic:claude-haiku-4-5", "kwargs": {"temperature": 0, "max_tokens": 4096}},
-    "sonnet-4-6": {"id": "anthropic:claude-sonnet-4-6", "kwargs": {"temperature": 0, "max_tokens": 4096}},
-    "gpt-5-4-mini": {"id": "openai:gpt-5.4-mini", "kwargs": {"reasoning_effort": "low"}},
+    "haiku-4-5":  {
+        "id": "anthropic:claude-haiku-4-5",
+        "kwargs": {"temperature": 0, "max_tokens": 4096}
+      },
+    "sonnet-5-5": {
+        "id": "anthropic:claude-sonnet-5-5",
+        "kwargs": {"temperature": 0, "max_tokens": 4096},
+    },
+    "gpt-6-1-sol": {
+        "id": "openai:gpt-6.1-sol",
+        "kwargs": {"reasoning_effort": "medium"},
+    },
     # ...
 }
-AGENT_MODEL = "sonnet-4-6"      # the agent under test
-JUDGE_MODEL = "gpt-5-4-mini"    # the LLM judge
+AGENT_MODEL = "sonnet-5-5"     # the agent under test
+JUDGE_MODEL = "gpt-6-1-sol"    # the LLM judge
 ```
 
 The judge defaults to a different model family than the agent to avoid self-preference bias.
