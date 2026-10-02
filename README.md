@@ -81,10 +81,7 @@ API keys live in a git-ignored `.env` file at the repo root. Copy the template
 and fill in the providers you use:
 
 ```bash
-# PowerShell
-Copy-Item .env.example .env
-
-# macOS/Linux
+# PowerShell/macOS/Linux
 cp .env.example .env
 ```
 
@@ -135,9 +132,6 @@ python -m eval.runner --profile v2 --no-judge
 python -m eval.runner --profile v3 --difficulty easy --limit 5
 python -m eval.runner --difficulty easy --limit 5
 python -m eval.runner --no-judge
-
-# Judge calibration (test-retest)
-python -m eval.calibrate_judge output/results/output_*.jsonl --judge-model gpt-5-4 --sample 15 --repeats 3
 ```
 
 Experiment profiles live in `config/experiment_profiles.yaml`. Each profile
@@ -234,6 +228,23 @@ JUDGE_MODEL = "gpt-6-1-sol"    # the LLM judge
 ```
 
 The judge defaults to a different model family than the agent to avoid self-preference bias.
+
+## Judge calibration (test-retest)
+
+Judge calibration reruns the judge several times on cases where EX passed. It reports self-consistency: the average share of repeats agreeing with the majority verdict. For example, with 3 repeats, a case judged `CORRECT`, `CORRECT`, `INCORRECT` has a majority share of 2/3.
+
+It measures judge stability, rather than accuracy against human labels. Also, it's only informative for a judge that samples non-deterministically (temperature > 0 or reasoning models).
+
+To run:
+```bash
+python -m eval.calibrate_judge output/results/output_*.jsonl --judge-model gpt-6-1-sol --sample 18 --repeats 3
+```
+
+Parameters:
+
+* `--sample`: how many distinct EX-passing cases to draw, stratified by difficulty to match the eval set's mix (default 18; if fewer candidates exist, it uses all of them).
+* `--repeats`: how many times the judge is re-run on each sampled case, to see whether its verdict stays the same (default 3).
+
 
 ## LangSmith
 
