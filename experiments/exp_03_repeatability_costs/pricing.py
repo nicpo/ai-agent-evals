@@ -13,12 +13,12 @@ from __future__ import annotations
 PRICING: dict[str, dict[str, float]] = {
     # Keys must match config.MODELS registry keys.
     "haiku-4-5": {"input_per_million": 1.0, "output_per_million": 5.0},
-    "sonnet-4-6": {"input_per_million": 3.0, "output_per_million": 15.0},
+    "sonnet-5-5": {"input_per_million": 2.0, "output_per_million": 10.0},
     "gpt-5-4-nano": {"input_per_million": 0.05, "output_per_million": 0.4},
     "gpt-5-4-mini": {"input_per_million": 0.25, "output_per_million": 2.0},
     "gpt-5-4": {"input_per_million": 2.5, "output_per_million": 15.0},
+    "gpt-6-1-sol": {"input_per_million": 2.0, "output_per_million": 10.0},
 }
-
 
 def cost_usd(model_key: str, input_tokens: int, output_tokens: int) -> float | None:
     """Dollar cost for a token count under ``model_key``'s list price, or None if unpriced."""

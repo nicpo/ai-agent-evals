@@ -25,7 +25,7 @@ def get_chat_model(model: str | dict):
     """Return a LangChain ``BaseChatModel`` for a registry model.
 
     Args:
-        model: Either a friendly key into ``config.MODELS`` (e.g. "sonnet-4-6")
+        model: Either a friendly key into ``config.MODELS`` (e.g. "sonnet-5-5")
             or a registry entry dict (``{"id": ..., "kwargs": {...}}``).
 
     ``init_chat_model`` parses the ``provider:model`` id and dynamically loads

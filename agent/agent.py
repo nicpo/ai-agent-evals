@@ -82,7 +82,7 @@ def run_agent(
 
     Args:
         question: The natural-language question.
-        model: Registry key into ``config.MODELS`` (e.g. "sonnet-4-6").
+        model: Registry key into ``config.MODELS`` (e.g. "sonnet-5-5").
         toolbox: An open Toolbox; one is created (and closed) if not supplied.
         max_tool_calls: Circuit breaker.
     """

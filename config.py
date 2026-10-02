@@ -31,34 +31,26 @@ CALIBRATION_DIR = OUTPUT_DIR / "calibration"  # judge calibration reports (.txt)
 #   "kwargs" -- constructor kwargs for that model (temperature, max_tokens,
 #               reasoning_effort, ...), forwarded verbatim.
 MODELS: dict[str, dict] = {
-    # GPT-5.x reasoning models: function tools + reasoning_effort require
+    # GPT-6.x reasoning models: function tools + reasoning_effort require
     # OpenAI's /v1/responses endpoint, so route them through it.
-    "gpt-5-4-nano": {
-        "id": "openai:gpt-5.4-nano",
-        "kwargs": {"reasoning_effort": "low", "use_responses_api": True},
-    },
-    "gpt-5-4-mini": {
-        "id": "openai:gpt-5.4-mini",
-        "kwargs": {"reasoning_effort": "low", "use_responses_api": True},
-    },
-    "gpt-5-4": {
-        "id": "openai:gpt-5.4",
+    "gpt-6-1-sol": {
+        "id": "openai:gpt-6.1-sol",
         "kwargs": {"reasoning_effort": "medium"},
     },
     "haiku-4-5": {
         "id": "anthropic:claude-haiku-4-5",
         "kwargs": {"temperature": 0, "max_tokens": 4096},
     },
-    "sonnet-4-6": {
-        "id": "anthropic:claude-sonnet-4-6",
+    "sonnet-5-5": {
+        "id": "anthropic:claude-sonnet-5-5",
         "kwargs": {"temperature": 0, "max_tokens": 4096},
     },
 }
 
 # The agent under test and the LLM judge, selected by registry key. The judge is
 # deliberately a *different model family* from the agent to avoid self-preference bias.
-AGENT_MODEL = "haiku-4-5" #"gpt-5-4-nano"
-JUDGE_MODEL = "gpt-5-4" # "sonnet-4-6"
+AGENT_MODEL = "haiku-4-5"  # or "gpt-6-1-sol"
+JUDGE_MODEL = "gpt-6-1-sol" # or "opus-5-5"
 
 
 def resolve_model(name: str) -> dict:

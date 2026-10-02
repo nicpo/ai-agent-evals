@@ -92,10 +92,10 @@ Then edit the new `.env` file in the repository root (next to `config.py`).
 Never commit it. Add the key for the model provider you select:
 
 ```text
-# For --model gpt-5-4-mini, gpt-5-4, or gpt-5-4-nano
+# For --model gpt-6-1-sol
 OPENAI_API_KEY=sk-...
 
-# For --model haiku-4-5 or sonnet-4-6
+# For --model haiku-4-5 or sonnet-5-5
 ANTHROPIC_API_KEY=sk-ant-...
 
 # Only for experiments/exp_04_jev_judge (hosted Jev judge)
