@@ -1,0 +1,5 @@
+# Extra dependency for experiments/exp_05_self_improvement_loop: only the optional independent
+# grader on AWS Bedrock (Kimi, Qwen, DeepSeek, GLM etc.). The rest of the experiment needs only
+# the root requirements.
+-r ../../requirements.txt
+langchain-aws>=1.9.0

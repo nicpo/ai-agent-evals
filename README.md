@@ -40,7 +40,7 @@ Agent ───────┤
 
 ## Key experiments
 
-The experiments examine execution-versus-judge disagreement, whether grader agreement survives database perturbations, repeated-run reliability and cost accounting, and whether a small hosted decision model (Jev) can replace the LLM judge. See [Experiments](#experiments) for the runnable methodology and related blog-post code.
+The experiments examine execution-versus-judge disagreement, whether grader agreement survives database perturbations, repeated-run reliability and cost accounting, whether a small hosted decision model (Jev) can replace the LLM judge, and whether an agent can improve its own prompt without gaming its eval. See [Experiments](#experiments) for the runnable methodology and related blog-post code.
 
 ## Agent overview
 
@@ -97,6 +97,10 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 # Only for experiments/exp_04_jev_judge (hosted Jev judge)
 TYPESAFE_API_KEY=...
+
+# experiments/exp_05_self_improvement_loop needs both ANTHROPIC_API_KEY (agent, proposer)
+# and OPENAI_API_KEY (judge). Its optional independent grader can use any LangChain
+# provider (for example `pip install langchain-aws` and AWS credentials for Bedrock).
 ```
 
 The repository supports **OpenAI** and **Anthropic** out of the box: those are
@@ -149,6 +153,8 @@ python -m eval.runner --profile toy
 
 The `toy` profile (in `config/experiment_profiles.yaml`) is identical to `v1` except it points `harness.eval_glob` at `toy/questions-*.jsonl` instead of the default `questions-*.jsonl`.
 
+`data/evals/toy/test/` holds 4 more toy cases (2 families, with a `family_id` field) as a held-out set for [experiment 05](experiments/exp_05_self_improvement_loop/); the `toy_test` profile points at them.
+
 For actual experiments, do not rely on this toy set. Create your own eval set (see below) sized and reviewed for the behaviors you want to measure.
 
 ## Generate gold eval set
@@ -195,8 +201,10 @@ elsewhere if you need scores to be reproducible across clones.
 `experiments/` contains standalone code for the methodology behind a few blog
 posts about this harness: the EX-vs-judge disagreement matrix, probing
 graders' *agreement* with database perturbations, repeated-run
-reliability/cost accounting, and Jev (a small hosted decision model) as the
-semantic SQL judge next to EX and the GPT judge. Each one runs against the toy eval set by
+reliability/cost accounting, Jev (a small hosted decision model) as the
+semantic SQL judge next to EX and the GPT judge, and a bounded self-improvement
+loop that edits the agent's prompt and is checked on held-out questions and an
+independent grader. Each one runs against the toy eval set by
 default and takes a `--profile` flag to point at your own eval set instead.
 See [`experiments/README.md`](experiments/README.md).
 
@@ -276,7 +284,7 @@ rome-eval-harness/             # repo root (also the import root)
 │   └── verify_graders.py  # offline check of Tiers 1/2/2b (no LLM)
 ├── config/                # experiment_profiles.yaml + judge prompt bundles
 ├── data/                  # roman_empire.db + evals/questions-*.jsonl (toy set in evals/toy/)
-├── experiments/           # exp_01 to exp_04: standalone blog-post experiments
+├── experiments/           # exp_01 to exp_05: standalone blog-post experiments
 ├── tests/                 # offline unit tests: python -m unittest discover -s tests
 └── output/
     ├── results/           # per-question traces + grades (.jsonl)
