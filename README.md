@@ -1,17 +1,19 @@
-# AI Agent Evals: Reliability, Graders, and Cost
+# AI Agent Evals: Reliability, Graders and Cost
 
 An experimental evaluation harness for a text-to-SQL agent.
 
 I use a small agent and fictional Roman Empire database to investigate how agent evaluation behaves in practice:
 
-- When do deterministic and LLM graders disagree?
-- Can both graders agree on an incorrect answer?
-- How much does measured performance vary across repeated runs?
-- How do agent architecture changes affect accuracy and inference cost?
+- [When do deterministic and LLM graders disagree?](experiments/exp_01_graders_disagreement/)
+- [Can both graders agree on an incorrect answer?](experiments/exp_02_graders_agreement/)
+- [How much does measured performance vary across repeated runs?](experiments/exp_03_repeatability_costs/)
+- [How do agent architecture changes affect accuracy and inference cost?](experiments/exp_03_repeatability_costs/)
+- [Can Jev, a decision model, replace the LLM judge?](experiments/exp_04_jev_judge/)
+- [Can an agent improve its own prompt without gaming its eval?](experiments/exp_05_self_improvement_loop/)
 
-[Project overview](#project-summary-diagram) · [Experiments and blog](#experiments) · [Run the harness](#run)
+[Setup](#setup) · [Run the harness](#run) · [Experiments and blog](https://nicpo.github.io/)
 
-## Project summary diagram
+## Project summary
 
 ```text
                          Build eval
@@ -38,10 +40,6 @@ Agent ───────┤
                  Is the improvement worth it?
 ```
 
-## Key experiments
-
-The experiments examine execution-versus-judge disagreement, whether grader agreement survives database perturbations, repeated-run reliability and cost accounting, whether a small hosted decision model (Jev) can replace the LLM judge, and whether an agent can improve its own prompt without gaming its eval. See [Experiments](#experiments) for the runnable methodology and related blog-post code.
-
 ## Agent overview
 
 The agent is a small text-to-SQL assistant. You give it a free-form question about the Roman Empire such as:
@@ -63,7 +61,7 @@ User question
 
 Its tools are:
 
-- `get_schema`: returns tables, columns, types, and relationships.
+- `get_schema`: returns tables, columns, types and relationships.
 - `get_sample_rows`: returns example records so the agent can discover actual values, such as permitted status names.
 - `run_query`: executes a read-only SQL query and returns columns, rows, row count, or an error.
 
@@ -71,8 +69,15 @@ Its tools are:
 
 ### 1. Set up the environment
 ```bash
+# create venv
 python -m venv .venv
-.venv/Scripts/activate          # Windows; use source .venv/bin/activate on POSIX
+
+# activate it. PowerShell:
+.venv\Scripts\activate
+# macOS/Linux
+source .venv/bin/activate
+
+# install packages
 pip install -r requirements.txt
 ```
 
@@ -86,22 +91,19 @@ cp .env.example .env
 ```
 
 Then edit the new `.env` file in the repository root (next to `config.py`).
-Never commit it. Add the key for the model provider you select:
+Add the key(s) for the model provider you use:
 
 ```text
 # For --model gpt-6-1-sol
 OPENAI_API_KEY=sk-...
 
-# For --model haiku-4-5 or sonnet-5-5
+# For --model haiku-5-5 or sonnet-5-5
 ANTHROPIC_API_KEY=sk-ant-...
 
 # Only for experiments/exp_04_jev_judge (hosted Jev judge)
 TYPESAFE_API_KEY=...
-
-# experiments/exp_05_self_improvement_loop needs both ANTHROPIC_API_KEY (agent, proposer)
-# and OPENAI_API_KEY (judge). Its optional independent grader can use any LangChain
-# provider (for example `pip install langchain-aws` and AWS credentials for Bedrock).
 ```
+Experiment [`exp_05_self_improvement_loop`](experiments/exp_05_self_improvement_loop/) needs both `ANTHROPIC_API_KEY` (agent, proposer) and `OPENAI_API_KEY` (judge). Its optional independent grader can use any LangChain provider (for example `pip install langchain-aws` and AWS credentials for Bedrock).
 
 The repository supports **OpenAI** and **Anthropic** out of the box: those are
 the provider packages installed in `requirements.txt` and the model entries in
@@ -138,14 +140,47 @@ python -m eval.runner --difficulty easy --limit 5
 python -m eval.runner --no-judge
 ```
 
+Results are written to `output/results/` (per-question traces and grades) and `output/summaries/` (aggregate metrics). Both are git-ignored.
+
 Experiment profiles live in `config/experiment_profiles.yaml`. Each profile
-selects repository-local agent and judge prompts, tools, models, and harness
+selects repository-local agent and judge prompts, tools, models and harness
 settings; results record the resolved profile plus prompt hashes.
+
+### Prompt versioning
+
+Agent prompts are files (`agent/system_prompt_v1.md`, `_v2`, `_v3`), and a profile points at one by path. Results
+record the profile and the SHA-256 of each prompt used, so you can tell later which prompt produced which score.
+
+To try a prompt change, don't edit a prompt file that earlier results were produced with. Otherwise the file no longer
+matches those results, and a score from before the edit and a score from after it look like the same setup. Instead:
+
+1. Copy the prompt: `cp agent/system_prompt_v3.md agent/system_prompt_v4.md`, then edit the copy.
+2. Add a profile to `config/experiment_profiles.yaml` that points at it (copy an existing profile and change its
+   name and `agent.prompt`):
+
+   ```yaml
+   v4:
+     agent:
+       model: haiku-5-5
+       prompt: agent/system_prompt_v4.md
+       tools: [run_query, get_sample_rows]
+     judge:
+       enabled: true
+       model: gpt-6-1-sol
+       prompts: config/judge_prompts/default.yaml
+     harness:
+       eval_glob: questions-*.jsonl
+       max_tool_calls: 12
+   ```
+
+3. Run it: `python -m eval.runner --profile v4`.
+
+Judge prompts work the same way: copy `config/judge_prompts/default.yaml` to a new file and point the profile's
+`judge.prompts` at it.
 
 ## Toy eval set
 
-`data/evals/toy/` contains 4 example cases (2 easy, 1 medium, 1 hard), split by difficulty into `questions-easy.jsonl`, `questions-medium.jsonl`, and `questions-hard.jsonl` - the same naming convention the canonical set uses. **This is a toy set only**. I t exists so you can run the harness end-to-end without generating anything first, and so you can see the eval case structure (question, gold SQL, gold result, and the grader metadata fields) in real files. It lives in a subdirectory so the default `questions-*.jsonl` glob (rooted at `data/evals/`) does not pick it up; point
-the runner at it explicitly:
+`data/evals/toy/` contains 4 example cases (2 easy, 1 medium, 1 hard), split by difficulty into `questions-easy.jsonl`, `questions-medium.jsonl`, and `questions-hard.jsonl` - the same naming convention the canonical set uses. **This is a toy set only**. It exists so you can run the harness end-to-end without generating anything first, and so you can see the eval case structure (question, gold SQL, gold result and the grader metadata fields) in real files. It lives in a subdirectory so the default `questions-*.jsonl` glob (rooted at `data/evals/`) does not pick it up; point the runner at it explicitly:
 
 ```bash
 python -m eval.runner --profile toy
@@ -174,15 +209,15 @@ read-only database, and writes only executable cases marked
 
 ```bash
 # Requires OPENAI_API_KEY in .env
-python -m eval.generate_evals --model gpt-5-4-mini --count 10 \
+python -m eval.generate_evals --model gpt-6-1-sol --count 10 \
   --out data/evals/candidates/roman_empire_candidates.jsonl
 
 # Or use Anthropic, with ANTHROPIC_API_KEY in .env
-python -m eval.generate_evals --model haiku-4-5 --count 10 \
+python -m eval.generate_evals --model opus-5-5 --count 10 \
   --out data/evals/candidates/roman_empire_candidates.jsonl
 ```
 
-After the questions were generated, review them:
+After the questions were generated, **review them (very important! Gold quality = eval trustworthiness)**:
 
 1. Does the question have one clear interpretation?
 2. Does the SQL answer that question exactly, without unrequested columns or
@@ -198,15 +233,30 @@ elsewhere if you need scores to be reproducible across clones.
 
 ## Experiments
 
-`experiments/` contains standalone code for the methodology behind a few blog
-posts about this harness: the EX-vs-judge disagreement matrix, probing
-graders' *agreement* with database perturbations, repeated-run
-reliability/cost accounting, Jev (a small hosted decision model) as the
-semantic SQL judge next to EX and the GPT judge, and a bounded self-improvement
-loop that edits the agent's prompt and is checked on held-out questions and an
-independent grader. Each one runs against the toy eval set by
-default and takes a `--profile` flag to point at your own eval set instead.
-See [`experiments/README.md`](experiments/README.md).
+The code for experiments is in `experiments/`. Method details and options for each experiment is in each experiment's own README.
+
+The results are described as a [series of blog posts](https://nicpo.github.io/).
+
+### How to run experiments
+
+[`experiments/README.md`](experiments/README.md) describes how to run each experiment. Out of the box, each experiment runs against the toy eval set (but you really should [create and review](#generate-gold-eval-set) an actual eval set).
+
+### Writing your own experiment
+
+An experiment is a small script on top of the harness. Here is the pattern used by `exp_01`'s `run.py`:
+
+```python
+from eval.runner import load_questions, run_suite
+from experiment_profiles import load_profile
+
+profile = load_profile("my_profile")           # defined in config/experiment_profiles.yaml
+cases = load_questions(glob=profile.eval_glob)
+results_path = run_suite(cases, profile=profile, run_judge=True)   # writes output/results/*.jsonl
+```
+
+Define what varies (prompt, tools, model, eval set) as a profile, run it through `run_suite`, then analyze the
+results JSONL in your own script. Copy an `experiments/exp_0N_*/` folder as a starting point and keep its README
+with the question, method and run commands.
 
 ## Changing models
 
@@ -217,13 +267,13 @@ LangChain's `init_chat_model`. Models live in the `MODELS` registry in
 ```python
 # config.py
 MODELS = {
-    "haiku-4-5":  {
-        "id": "anthropic:claude-haiku-4-5",
-        "kwargs": {"temperature": 0, "max_tokens": 4096}
+    "haiku-5-5":  {
+        "id": "anthropic:claude-haiku-5-5",
+        "kwargs": {"max_tokens": 4096}
       },
     "sonnet-5-5": {
         "id": "anthropic:claude-sonnet-5-5",
-        "kwargs": {"temperature": 0, "max_tokens": 4096},
+        "kwargs": {"max_tokens": 4096},
     },
     "gpt-6-1-sol": {
         "id": "openai:gpt-6.1-sol",
@@ -231,7 +281,7 @@ MODELS = {
     },
     # ...
 }
-AGENT_MODEL = "sonnet-5-5"     # the agent under test
+AGENT_MODEL = "haiku-5-5"      # the agent under test
 JUDGE_MODEL = "gpt-6-1-sol"    # the LLM judge
 ```
 
@@ -263,17 +313,27 @@ LANGSMITH_API_KEY=ls__...
 LANGSMITH_PROJECT=sql-agent-eval   # optional
 ```
 
+## Tests
+
+Offline unit tests (no network, no API keys):
+
+```bash
+python -m unittest discover -s tests
+```
+
 ## Layout
 
 ```
-rome-eval-harness/             # repo root (also the import root)
+ai-agent-evals/                # repo root (also the import root)
 ├── config.py              # paths + MODELS registry + agent/judge selection
+├── experiment_profiles.py # loads config/experiment_profiles.yaml
+├── setup_db.py            # builds data/roman_empire.db from data/tables/*.csv
 ├── agent/
 │   ├── db.py              # read-only SQLite connection + authored schema metadata
 │   ├── tools.py           # get_schema, run_query, get_sample_rows (+ LangChain tools)
 │   ├── llm.py             # provider-agnostic chat-model factory
 │   ├── agent.py           # run_agent(), AgentTrace, ToolCall
-│   └── system_prompt.md
+│   └── system_prompt*.md  # default prompt and the v1/v2/v3 variants used by profiles
 ├── graders/
 │   ├── tool_call.py       # Tier 1
 │   ├── sql_structural.py  # Tier 2 (sqlglot)
@@ -281,12 +341,19 @@ rome-eval-harness/             # repo root (also the import root)
 │   └── llm_judge.py       # Tier 5 (branching rubrics)
 ├── eval/
 │   ├── runner.py          # orchestrates all tiers, writes output/results/*.jsonl
-│   └── verify_graders.py  # offline check of Tiers 1/2/2b (no LLM)
+│   ├── verify_graders.py  # offline check of Tiers 1/2/2b (no LLM)
+│   ├── generate_evals.py  # LLM-generated candidate eval cases
+│   ├── calibrate_judge.py # judge test-retest calibration
+│   ├── metrics.py         # aggregate run metrics
+│   └── replay.py, rejudge_replay.py  # re-grade saved attempts
 ├── config/                # experiment_profiles.yaml + judge prompt bundles
-├── data/                  # roman_empire.db + evals/questions-*.jsonl (toy set in evals/toy/)
-├── experiments/           # exp_01 to exp_05: standalone blog-post experiments
-├── tests/                 # offline unit tests: python -m unittest discover -s tests
-└── output/
+├── data/
+│   ├── tables/            # CSV seed files for the database
+│   ├── roman_empire.db    # generated by setup_db.py
+│   └── evals/             # questions-*.jsonl (canonical set is git-ignored); toy/ ships with the repo
+├── experiments/           # exp_XX: standalone experiments
+├── tests/                 # offline unit tests
+└── output/                # git-ignored
     ├── results/           # per-question traces + grades (.jsonl)
     ├── summaries/         # aggregate run metrics (.json)
     └── calibration/       # judge calibration reports (.txt)
@@ -294,5 +361,5 @@ rome-eval-harness/             # repo root (also the import root)
 
 Run modules from the repo root (the import root), e.g. `python -m eval.runner`.
 
-The agent reads the existing database at `data/roman_empire.db` and the test
-cases at `data/evals/questions-*.jsonl` (61 questions).
+The default profiles (`v1` to `v3`) read test cases from `data/evals/questions-*.jsonl`. That canonical set is not
+shipped (the author's run used 61 questions); generate your own (see above) or use the `toy` profile.

@@ -39,11 +39,15 @@ MODELS: dict[str, dict] = {
     },
     "haiku-4-5": {
         "id": "anthropic:claude-haiku-4-5",
-        "kwargs": {"temperature": 0, "max_tokens": 4096},
+        "kwargs": {"max_tokens": 4096},
     },
     "sonnet-5-5": {
         "id": "anthropic:claude-sonnet-5-5",
-        "kwargs": {"temperature": 0, "max_tokens": 4096},
+        "kwargs": {"max_tokens": 4096},
+    },
+    "opus-5-5": {
+        "id": "anthropic:claude-opus-5-5",
+        "kwargs": {"max_tokens": 4096},  # sampling params (temperature etc.) are rejected
     },
 }
 
